@@ -3,7 +3,6 @@ use error::*;
 use serde::iter;
 use self::LexerError::*;
 
-use DEBUG;
 use IsWhitespace;
 use std::ops::Deref;
 
@@ -486,13 +485,13 @@ impl<Iter> XmlIterator<Iter>
     }
 
     pub fn bump(&mut self) -> Result<Lexical, Error> {
-        if DEBUG { print!("bump"); }
+        debug!("bump");
         assert!(self.ch != InternalLexical::EndOfFile);
         self.ch = match self.decode() {
             Ok(ch) => ch,
             Err(e) => return Err(self.lexer_error(e)),
         };
-        if DEBUG { println!(" -> {:?}", self.ch()); }
+        debug!(" -> {:?}\n", self.ch());
         self.ch()
     }
 }

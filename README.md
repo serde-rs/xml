@@ -11,7 +11,6 @@
 - [ ] deserialize errors instead of assertions
 - [ ] more deserialize tests
 - [x] parse to dom tree
-- [ ] remove debug print! messages
 - [ ] struct to xml serialization
 
 ## anti-features

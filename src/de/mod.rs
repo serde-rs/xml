@@ -3,7 +3,6 @@ use error::*;
 use error::ErrorCode::*;
 use serde::de;
 
-use DEBUG;
 use IsWhitespace;
 
 use std::io;
@@ -66,7 +65,7 @@ where Iter: Iterator<Item=io::Result<u8>>,
     fn visit<V>(&mut self, mut visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG { println!("InnerDeserializer::visit"); }
+        debug!("InnerDeserializer::visit\n");
         match try!(self.0.ch()) {
             StartTagClose => {
                 match {
@@ -89,7 +88,7 @@ where Iter: Iterator<Item=io::Result<u8>>,
     fn visit_option<V>(&mut self, mut visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG { println!("InnerDeserializer::visit_option"); }
+        debug!("InnerDeserializer::visit_option\n");
         match try!(self.0.ch()) {
             StartTagClose => visitor.visit_some(self),
             EmptyElementEnd(_) => visitor.visit_none(),
@@ -101,7 +100,7 @@ where Iter: Iterator<Item=io::Result<u8>>,
     fn visit_seq<V>(&mut self, mut visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG { println!("InnerDeserializer::visit_seq"); }
+        debug!("InnerDeserializer::visit_seq\n");
         *self.1 = true;
         visitor.visit_seq(SeqVisitor::new(self.0))
     }
@@ -109,7 +108,7 @@ where Iter: Iterator<Item=io::Result<u8>>,
     fn visit_map<V>(&mut self, mut visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG { println!("InnerDeserializer::visit_map"); }
+        debug!("InnerDeserializer::visit_map\n");
         visitor.visit_map(ContentVisitor::new_attr(&mut self.0))
     }
 
@@ -129,7 +128,7 @@ where Iter: Iterator<Item=io::Result<u8>>,
     fn visit_enum<V>(&mut self, _enum: &str, mut visitor: V) -> Result<V::Value, Error>
         where V: de::EnumVisitor,
     {
-        if DEBUG { println!("InnerDeserializer::visit_enum"); }
+        debug!("InnerDeserializer::visit_enum\n");
         visitor.visit(VariantVisitor(&mut self.0))
     }
 }
@@ -161,10 +160,8 @@ impl<'a> de::Deserializer for KeyDeserializer<'a> {
     fn visit<V>(&mut self, mut visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG {
-            println!("keydeserializer::visit");
-            println!("{:?}", self.0);
-        }
+        debug!("keydeserializer::visit\n");
+        debug!("{:?}\n", self.0);
         visitor.visit_str(self.0)
     }
 
@@ -223,7 +220,7 @@ impl<Iter> de::Deserializer for Deserializer<Iter>
     fn visit<V>(&mut self, visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG { println!("Deserializer::visit"); }
+        debug!("Deserializer::visit\n");
         expect!(self.rdr, StartTagName(_), "start tag name");
         try!(self.rdr.bump());
         let is_seq = &mut false;
@@ -242,7 +239,7 @@ impl<Iter> de::Deserializer for Deserializer<Iter>
     fn visit_option<V>(&mut self, mut visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG { println!("Deserializer::visit"); }
+        debug!("Deserializer::visit\n");
         expect!(self.rdr, StartTagName(_), "start tag name");
         let is_seq = &mut false;
         let v = match try!(self.rdr.bump()) {
@@ -284,7 +281,7 @@ impl<Iter> de::Deserializer for Deserializer<Iter>
     fn visit_map<V>(&mut self, visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
-        if DEBUG { println!("Deserializer::visit_map"); }
+        debug!("Deserializer::visit_map\n");
         expect!(self.rdr, StartTagName(_), "start tag name"); // TODO: named map
         try!(self.rdr.bump());
         let is_seq = &mut false;
@@ -441,7 +438,7 @@ impl<'a, Iter> de::MapVisitor for ContentVisitor<'a, Iter>
         where K: de::Deserialize,
     {
         use self::ContentVisitorState::*;
-        if DEBUG { println!("visit_key: {:?}", (&self.state, try!(self.de.ch()))); }
+        debug!("visit_key: {:?}\n", (&self.state, try!(self.de.ch())));
         match match (&self.state, try!(self.de.ch())) {
             (&Attribute, EmptyElementEnd(_)) => return Ok(None),
             (&Attribute, StartTagClose) => 0,
@@ -499,7 +496,7 @@ impl<'a, Iter> de::MapVisitor for ContentVisitor<'a, Iter>
         where V: de::Deserialize,
     {
         use self::ContentVisitorState::*;
-        if DEBUG { println!("visit_value: {:?}", &self.state); }
+        debug!("visit_value: {:?}\n", &self.state);
         match self.state {
             Attribute => {
                 let v = {
@@ -514,7 +511,7 @@ impl<'a, Iter> de::MapVisitor for ContentVisitor<'a, Iter>
                 try!(self.de.bump());
                 let (is_seq, v) = InnerDeserializer::decode(&mut self.de);
                 let v = try!(v);
-                if DEBUG { println!("is_seq: {}", is_seq); }
+                debug!("is_seq: {}\n", is_seq);
                 if !is_seq {
                     match try!(self.de.ch()) {
                         EmptyElementEnd(_) => {},
@@ -539,14 +536,14 @@ impl<'a, Iter> de::MapVisitor for ContentVisitor<'a, Iter>
     }
 
     fn end(&mut self) -> Result<(), Error> {
-        if DEBUG { println!("end: {:?}", &self.state); }
+        debug!("end: {:?}\n", &self.state);
         Ok(())
     }
 
     fn missing_field<V>(&mut self, field: &'static str) -> Result<V, Error>
         where V: de::Deserialize,
     {
-        if DEBUG { println!("missing field: {}", field); }
+        debug!("missing field: {}\n", field);
         // See if the type can deserialize from a unit.
         de::Deserialize::deserialize(&mut UnitDeserializer)
     }
@@ -576,7 +573,7 @@ impl<'a, Iter> de::SeqVisitor for SeqVisitor<'a, Iter>
     fn visit<T>(&mut self) -> Result<Option<T>, Error>
         where T: de::Deserialize,
     {
-        if DEBUG { println!("SeqVisitor::visit: {:?}", (self.done, self.de.ch())); }
+        debug!("SeqVisitor::visit: {:?}\n", (self.done, self.de.ch()));
         if self.done {
             return Ok(None);
         }
@@ -611,7 +608,7 @@ impl<'a, Iter> de::SeqVisitor for SeqVisitor<'a, Iter>
     }
 
     fn end(&mut self) -> Result<(), Error> {
-        if DEBUG { println!("SeqVisitor::end"); }
+        debug!("SeqVisitor::end\n");
         Ok(())
     }
 }

@@ -8,6 +8,7 @@ repository = "https://github.com/serde-rs/xml"
 
 [dependencies]
 serde = "*"
+log = "*"
 
 [dev-dependencies]
 serde_macros = "*"

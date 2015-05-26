@@ -1,4 +1,6 @@
 extern crate serde;
+#[macro_use]
+extern crate log;
 
 pub use self::de::{Deserializer, from_str};
 pub use self::error::{Error, ErrorCode};
@@ -6,12 +8,6 @@ pub use self::error::{Error, ErrorCode};
 pub mod de;
 pub mod error;
 pub mod value;
-
-#[cfg(not(ndebug))]
-const DEBUG: bool = true;
-
-#[cfg(ndebug)]
-const DEBUG: bool = false;
 
 trait IsWhitespace<T> {
     fn is_ws(&self) -> bool;
