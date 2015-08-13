@@ -1,14 +1,14 @@
 [package]
 name = "serde_xml"
-version = "0.0.1"
+version = "0.5.0"
 authors = ["Oliver Schneider <serde-xml98198@oli-obk.de>"]
 license = "MIT non-military non-spy"
 description = "xml support for rust-serde"
 repository = "https://github.com/serde-rs/xml"
 
 [dependencies]
-serde = "*"
+serde = "0.5"
 log = "*"
 
 [dev-dependencies]
-serde_macros = "*"
+serde_macros = "0.5"

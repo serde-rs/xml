@@ -7,13 +7,13 @@ use serde::de;
 use self::ErrorCode::*;
 
 /// The errors that can arise while parsing a JSON stream.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum ErrorCode {
     EOF,
     RawValueCannotHaveAttributes,
     InvalidOptionalElement,
     NotUtf8,
-    SerdeExpectedSomeValue,
+    SerdeExpectedSomeValue(String),
     ExpectedEOF,
     LexingError(super::de::LexerError),
     Expected(&'static str),
@@ -29,7 +29,7 @@ impl fmt::Debug for ErrorCode {
             RawValueCannotHaveAttributes => "raw value cannot have attributes".fmt(f),
             InvalidOptionalElement => "invalid optional element".fmt(f),
             NotUtf8 => "bad utf8".fmt(f),
-            SerdeExpectedSomeValue => "serde expected some value".fmt(f),
+            SerdeExpectedSomeValue(ref s) => write!(f, "serde expected some value: {}", s),
             LexingError(e) => write!(f, "error during lexing: \"{:?}\"", e),
             Expected(what) => write!(f, "expected {}", what),
             XmlDoesntSupportSeqofSeq => "xml doesn't support sequences of sequences.\
@@ -91,19 +91,19 @@ impl From<io::Error> for Error {
 }
 
 impl de::Error for Error {
-    fn syntax_error() -> Error {
-        Error::SyntaxError(SerdeExpectedSomeValue, 0, 0)
+    fn syntax(msg: &str) -> Error {
+        Error::SyntaxError(SerdeExpectedSomeValue(msg.to_string()), 0, 0)
     }
 
-    fn unknown_field_error(field: &str) -> Error {
+    fn unknown_field(field: &str) -> Error {
         Error::UnknownField(field.to_string())
     }
 
-    fn end_of_stream_error() -> Error {
+    fn end_of_stream() -> Error {
         Error::SyntaxError(EOF, 0, 0)
     }
 
-    fn missing_field_error(field: &'static str) -> Error {
+    fn missing_field(field: &'static str) -> Error {
         Error::MissingFieldError(field)
     }
 }

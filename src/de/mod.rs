@@ -112,20 +112,20 @@ where Iter: Iterator<Item=io::Result<u8>>,
         visitor.visit_map(ContentVisitor::new_attr(&mut self.0))
     }
 
-    fn visit_named_unit<V>(&mut self, _name: &str, _visitor: V) -> Result<V::Value, Error>
+    fn visit_unit_struct<V>(&mut self, _name: &str, _visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
         unimplemented!()
     }
 
-    fn visit_named_seq<V>(&mut self, _name: &str, _visitor: V) -> Result<V::Value, Error>
+    fn visit_tuple_struct<V>(&mut self, _name: &str, _len: usize, _visitor: V) -> Result<V::Value, Error>
         where V: de::Visitor,
     {
         unimplemented!()
     }
 
     #[inline]
-    fn visit_enum<V>(&mut self, _enum: &str, mut visitor: V) -> Result<V::Value, Error>
+    fn visit_enum<V>(&mut self, _enum: &str, _variants: &'static [&'static str], mut visitor: V) -> Result<V::Value, Error>
         where V: de::EnumVisitor,
     {
         debug!("InnerDeserializer::visit_enum\n");
@@ -173,7 +173,7 @@ impl<'a> de::Deserializer for KeyDeserializer<'a> {
     }
 
     #[inline]
-    fn visit_enum<V>(&mut self, _enum: &str, _visitor: V) -> Result<V::Value, Error>
+    fn visit_enum<V>(&mut self, _enum: &str, _variants: &'static [&'static str], _visitor: V) -> Result<V::Value, Error>
         where V: de::EnumVisitor,
     {
         unimplemented!()
@@ -259,7 +259,7 @@ impl<Iter> de::Deserializer for Deserializer<Iter>
     }
 
     #[inline]
-    fn visit_enum<V>(&mut self, _enum: &str, mut visitor: V) -> Result<V::Value, Error>
+    fn visit_enum<V>(&mut self, _enum: &str, _variants: &'static [&'static str], mut visitor: V) -> Result<V::Value, Error>
         where V: de::EnumVisitor,
     {
         expect!(self.rdr, StartTagName(_), "start tag name");
@@ -323,15 +323,15 @@ impl<'a, Iter: 'a> de::VariantVisitor for VariantVisitor<'a, Iter>
         Ok(())
     }
 
-    /// `visit_seq` is called when deserializing a tuple-like variant.
-    fn visit_seq<V>(&mut self, _visitor: V) -> Result<V::Value, Self::Error>
+    /// `visit_tuple` is called when deserializing a tuple-like variant.
+    fn visit_tuple<V>(&mut self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
         where V: de::Visitor
     {
         unimplemented!()
     }
 
-    /// `visit_map` is called when deserializing a struct-like variant.
-    fn visit_map<V>(&mut self, mut visitor: V) -> Result<V::Value, Self::Error>
+    /// `visit_struct` is called when deserializing a struct-like variant.
+    fn visit_struct<V>(&mut self, _fields: &'static [&'static str], mut visitor: V) -> Result<V::Value, Self::Error>
         where V: de::Visitor
     {
         try!(self.0.bump());
