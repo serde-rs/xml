@@ -305,10 +305,19 @@ impl<'a, Iter: 'a> de::VariantVisitor for VariantVisitor<'a, Iter>
         let ret = {
             let v = expect_val!(self.0, Text, "content");
             let v = try!(self.0.from_utf8(v));
-            KeyDeserializer::visit(v)
+            try!(KeyDeserializer::visit(v))
         };
         expect!(self.0, EndTagName(_), "end tag name");
-        ret
+        Ok(ret)
+    }
+
+    /// `visit_struct` is called when deserializing a struct-like variant
+    fn visit_struct<V>(&mut self, _fields: &'static [&'static str], mut visitor: V) -> Result<V::Value, Self::Error>
+        where V: de::Visitor,
+    {
+        expect!(self.0, StartTagClose, "start tag close");
+        let ret = try!(visitor.visit_map(ContentVisitor::new_attr(self.0)));
+        Ok(ret)
     }
 }
 

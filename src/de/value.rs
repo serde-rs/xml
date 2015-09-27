@@ -110,6 +110,40 @@ impl de::VariantVisitor for VariantVisitor
     fn visit_unit(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
+
+    fn visit_newtype<T>(&mut self) -> Result<T, Self::Error>
+        where T: de::Deserialize,
+    {
+        if let Some(element) = self.0.take() {
+            if let Content::Text(content) = element.members {
+                de::Deserialize::deserialize(&mut StringDeserializer(Some(content)))
+            }
+            else {
+                Err(Error::SyntaxError(ErrorCode::Expected("non-empty element"), 0, 0))
+            }
+        }
+        else {
+            Err(Error::SyntaxError(ErrorCode::Expected("element"), 0, 0))
+        }
+    }
+
+    fn visit_struct<V>(&mut self, _fields: &'static [&'static str], mut visitor: V) -> Result<V::Value, Self::Error>
+        where V: de::Visitor
+    {
+        if let Some(element) = self.0.take() {
+            visitor.visit_map(MapDeserializer {
+                attributes: element.attributes
+                              .into_iter()
+                              .map(|(k, v)| (k, v.into_iter()))
+                              .collect(),
+                state: MapDeserializerState::Inner,
+                members: element.members,
+            })
+        }
+        else {
+            Err(Error::SyntaxError(ErrorCode::Expected("element"), 0, 0))
+        }
+    }
 }
 
 struct SeqDeserializer<I: Iterator<Item=Element> + ExactSizeIterator>(I);
