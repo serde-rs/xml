@@ -7,7 +7,7 @@ use serde::de;
 use self::ErrorCode::*;
 
 /// The errors that can arise while parsing a JSON stream.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum ErrorCode {
     EOF,
     RawValueCannotHaveAttributes,
@@ -91,19 +91,20 @@ impl From<io::Error> for Error {
 }
 
 impl de::Error for Error {
-    fn syntax_error() -> Error {
+    fn syntax(msg: &str) -> Error {
+        debug!("Syntax error: {}", msg);
         Error::SyntaxError(SerdeExpectedSomeValue, 0, 0)
     }
 
-    fn unknown_field_error(field: &str) -> Error {
+    fn unknown_field(field: &str) -> Error {
         Error::UnknownField(field.to_string())
     }
 
-    fn end_of_stream_error() -> Error {
+    fn end_of_stream() -> Error {
         Error::SyntaxError(EOF, 0, 0)
     }
 
-    fn missing_field_error(field: &'static str) -> Error {
+    fn missing_field(field: &'static str) -> Error {
         Error::MissingFieldError(field)
     }
 }

@@ -115,9 +115,10 @@ fn test_parse_string() {
 #[test]
 fn test_parse_enum() {
     use self::Animal::*;
+
     test_parse_ok(&[
         ("<Animal xsi:type=\"Dog\"/>", Dog),
-        //("<Animal xsi:type=\"Frog\">Quak</Animal>", Frog("Quak".to_string())),
+        ("<Animal xsi:type=\"Frog\">Quak</Animal>", Frog("Quak".to_string())),
         (
             "<Animal xsi:type=\"Cat\"><age>42</age><name>Shere Khan</name></Animal>",
             Cat {
@@ -136,6 +137,10 @@ fn test_parse_enum() {
         (
             "<Helper><x xsi:type=\"Dog\"/></Helper>",
             Helper { x: Dog },
+        ),
+        (
+            "<Helper><x xsi:type=\"Frog\">Quak</Animal></Helper>",
+            Helper { x: Frog("Quak".to_string()) },
         ),
         (
             "<Helper><x xsi:type=\"Cat\">

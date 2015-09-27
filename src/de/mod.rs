@@ -112,20 +112,8 @@ where Iter: Iterator<Item=io::Result<u8>>,
         visitor.visit_map(ContentVisitor::new_attr(&mut self.0))
     }
 
-    fn visit_named_unit<V>(&mut self, _name: &str, _visitor: V) -> Result<V::Value, Error>
-        where V: de::Visitor,
-    {
-        unimplemented!()
-    }
-
-    fn visit_named_seq<V>(&mut self, _name: &str, _visitor: V) -> Result<V::Value, Error>
-        where V: de::Visitor,
-    {
-        unimplemented!()
-    }
-
     #[inline]
-    fn visit_enum<V>(&mut self, _enum: &str, mut visitor: V) -> Result<V::Value, Error>
+    fn visit_enum<V>(&mut self, _enum: &str, _variants: &'static [&'static str], mut visitor: V) -> Result<V::Value, Error>
         where V: de::EnumVisitor,
     {
         debug!("InnerDeserializer::visit_enum\n");
@@ -173,15 +161,8 @@ impl<'a> de::Deserializer for KeyDeserializer<'a> {
     }
 
     #[inline]
-    fn visit_enum<V>(&mut self, _enum: &str, _visitor: V) -> Result<V::Value, Error>
+    fn visit_enum<V>(&mut self, _enum: &str, _variants: &'static [&'static str], _visitor: V) -> Result<V::Value, Error>
         where V: de::EnumVisitor,
-    {
-        unimplemented!()
-    }
-
-    #[inline]
-    fn visit_seq<V>(&mut self, _visitor: V) -> Result<V::Value, Error>
-        where V: de::Visitor,
     {
         unimplemented!()
     }
@@ -259,7 +240,7 @@ impl<Iter> de::Deserializer for Deserializer<Iter>
     }
 
     #[inline]
-    fn visit_enum<V>(&mut self, _enum: &str, mut visitor: V) -> Result<V::Value, Error>
+    fn visit_enum<V>(&mut self, _enum: &str, _variants: &'static [&'static str], mut visitor: V) -> Result<V::Value, Error>
         where V: de::EnumVisitor,
     {
         expect!(self.rdr, StartTagName(_), "start tag name");
@@ -268,13 +249,6 @@ impl<Iter> de::Deserializer for Deserializer<Iter>
         let v = try!(v);
         expect!(self.rdr, EndOfFile, "end of file");
         Ok(v)
-    }
-
-    #[inline]
-    fn visit_seq<V>(&mut self, _visitor: V) -> Result<V::Value, Error>
-        where V: de::Visitor,
-    {
-        unimplemented!()
     }
 
     #[inline]
@@ -323,19 +297,18 @@ impl<'a, Iter: 'a> de::VariantVisitor for VariantVisitor<'a, Iter>
         Ok(())
     }
 
-    /// `visit_seq` is called when deserializing a tuple-like variant.
-    fn visit_seq<V>(&mut self, _visitor: V) -> Result<V::Value, Self::Error>
-        where V: de::Visitor
+    /// `visit_newtype` is called when deseriailizing a variant with a single value.
+    fn visit_newtype<D>(&mut self) -> Result<D, Self::Error>
+        where D: de::Deserialize
     {
-        unimplemented!()
-    }
-
-    /// `visit_map` is called when deserializing a struct-like variant.
-    fn visit_map<V>(&mut self, mut visitor: V) -> Result<V::Value, Self::Error>
-        where V: de::Visitor
-    {
-        try!(self.0.bump());
-        visitor.visit_map(ContentVisitor::new_attr(&mut self.0))
+        expect!(self.0, StartTagClose, "start tag close");
+        let ret = {
+            let v = expect_val!(self.0, Text, "content");
+            let v = try!(self.0.from_utf8(v));
+            KeyDeserializer::visit(v)
+        };
+        expect!(self.0, EndTagName(_), "end tag name");
+        ret
     }
 }
 
